@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartStock IA - Sistema Inteligente de Inventarios</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        indigo: {
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        },
+                        cyan: {
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                        },
+                        rose: {
+                            500: '#f43f5e',
+                            600: '#e11d48',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="/static/style.css">
+    
+    <!-- Lucide Icons (Modern alternative to FontAwesome) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- ApexCharts (For Premium Data Visualization) -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    
+    <!-- SmartStock SPA Application Controller -->
+    <script src="/static/app.js"></script>
+    
+    <!-- Alpine.js (Ultra-lightweight state reactivity) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="h-full antialiased text-slate-100 bg-[#07080c] relative overflow-hidden" x-data="smartStockApp()" x-init="init()">
+
+    <!-- Cyber Ambient Background Decoration -->
+    <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div class="cyber-grid"></div>
+        <div class="bg-orb orb-indigo"></div>
+        <div class="bg-orb orb-cyan"></div>
+        <div class="bg-orb orb-rose"></div>
+    </div>
+
+    <!-- ==========================================
+         PANTALLA DE INICIO DE SESIÓN
+         ========================================== -->
+    <div x-show="currentTab === 'login'" x-transition class="min-h-screen flex items-center justify-center px-4 relative overflow-hidden z-10">
+        <div class="w-full max-w-md glass glass-glow-indigo p-8 rounded-2xl relative z-10 shadow-2xl hover:scale-[1.01] transition-all">
+            <!-- Header de Login -->
+            <div class="text-center mb-8">
+                <div class="inline-flex p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/25 mb-4 animate-pulse">
+                    <i data-lucide="cpu" class="w-10 h-10 text-indigo-400 glow-text-indigo"></i>
+                </div>
+                <h1 class="text-3xl font-extrabold tracking-tight text-white font-heading">SmartStock <span class="text-indigo-400 font-bold glow-text-indigo">IA</span></h1>
+                <p class="text-xs text-slate-400 mt-2 tracking-widest uppercase font-semibold">Logística del Futuro en Tiempo Real</p>
+            </div>
+
+            <!-- Formulario -->
+            <form @submit.prevent="login()" class="space-y-6">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase tracking-widest mb-2">Usuario</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                            <i data-lucide="user" class="w-5 h-5"></i>
+                        </span>
+                        <input type="text" x-model="loginForm.username" required placeholder="admin"
+                            class="w-full bg-[#12131e]/50 border border-slate-700/60 rounded-xl py-3.5 pl-11 pr-4 text-white placeholder-slate-600 transition-all font-medium text-sm">
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-xs font-bold text-slate-300 uppercase tracking-widest">Contraseña</label>
+                        <button type="button" @click="currentTab = 'recover'" class="text-xs text-indigo-400 hover:text-indigo-300 hover:underline font-semibold transition-all">
+                            ¿Olvidaste tu contraseña?
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                            <i data-lucide="lock" class="w-5 h-5"></i>
+                        </span>
+                        <input type="password" x-model="loginForm.password" required placeholder="admin123"
+                            class="w-full bg-[#12131e]/50 border border-slate-700/60 rounded-xl py-3.5 pl-11 pr-4 text-white placeholder-slate-600 transition-all font-medium text-sm">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full btn-neon text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 flex items-center justify-center gap-2 text-sm">
+                    <span>Acceder al Sistema</span>
+                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </button>
+            </form>
+
+            <div class="mt-6 border-t border-slate-800/80 pt-6 text-center">
+                <span class="text-xs text-slate-500 font-medium">¿No tienes datos cargados? Usa el botón en el Dashboard al entrar.</span>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ==========================================
+         PANTALLA DE RECUPERACIÓN DE CONTRASEÑA
+         ========================================== -->
+    <div x-show="currentTab === 'recover'" x-transition class="min-h-screen flex items-center justify-center px-4 relative overflow-hidden z-10">
+        <div class="w-full max-w-md glass glass-glow-cyan p-8 rounded-2xl relative z-10 shadow-2xl transition-all">
+            <div class="text-center mb-8">
+                <div class="inline-flex p-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/25 mb-4 animate-pulse">
+                    <i data-lucide="key-round" class="w-10 h-10 text-cyan-400 glow-text-cyan"></i>
+                </div>
+                <h2 class="text-2xl font-bold tracking-tight text-white font-heading">Recuperar Acceso</h2>
+                <p class="text-xs text-slate-400 mt-2 tracking-widest uppercase font-semibold">Restablece la contraseña de tu cuenta</p>
+            </div>
+
+            <form @submit.prevent="recoverPassword()" class="space-y-5">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase tracking-widest mb-2">Usuario Registrado</label>
+                    <input type="text" x-model="recoverForm.username" required placeholder="Ingresa tu usuario"
+                        class="w-full bg-[#12131e]/50 border border-slate-700/60 rounded-xl py-3 px-4 text-white text-sm transition-all">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase tracking-widest mb-2">Nueva Contraseña</label>
+                    <input type="password" x-model="recoverForm.new_password" required placeholder="Nueva contraseña"
+                        class="w-full bg-[#12131e]/50 border border-slate-700/60 rounded-xl py-3 px-4 text-white text-sm transition-all">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase tracking-widest mb-2">Confirmar Nueva Contraseña</label>
+                    <input type="password" x-model="recoverForm.confirm_password" required placeholder="Confirmar contraseña"
+                        class="w-full bg-[#12131e]/50 border border-slate-700/60 rounded-xl py-3 px-4 text-white text-sm transition-all">
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="button" @click="currentTab = 'login'" class="w-1/3 bg-slate-800 hover:bg-slate-700 text-white font-semibold py-3 rounded-xl text-xs transition-all">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="w-2/3 btn-neon-cyan text-white font-bold py-3 rounded-xl shadow-lg shadow-cyan-500/20 flex items-center justify-center gap-2 text-xs">
+                        <span>Restablecer</span>
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ==========================================
+         PANEL PRINCIPAL DE APLICACIÓN (DASHBOARD + MODULOS)
+         ========================================== -->
+    <div x-show="isAuthenticated" class="h-screen flex overflow-hidden bg-[#07080c]">
+        
+        <!-- SIDEBAR LATERAL (MENU FUTURISTA) -->
+        <aside class="w-64 bg-[#0a0b11] border-r border-slate-800/80 flex flex-col justify-between z-20 shrink-0">
+            <div>
+                <!-- Brand Logo Area -->
+                <div class="h-16 flex items-center px-6 border-b border-slate-900">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="boxes" class="w-8 h-8 text-indigo-500 glow-text-indigo"></i>
+                        <span class="text-xl font-bold tracking-tight text-white font-heading">SmartStock <span class="text-indigo-500 font-extrabold">IA</span></span>
+                    </div>
+                </div>
+                
+                <!-- Navegación General -->
+                <nav class="p-4 space-y-1">
+                    <span class="px-3 block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Inventario Tradicional</span>
+                    
+                    <button @click="switchTab('dashboard')" 
+                        :class="currentTab === 'dashboard' ? 'sidebar-link-active' : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all">
+                        <i data-lucide="layout-dashboard" class="w-5 h-5 text-indigo-400"></i>
+                        <span>Dashboard Principal</span>
+                    </button>
+                    
+                    <button @click="switchTab('products')" 
+                        :class="currentTab === 'products' ? 'sidebar-link-active' : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all">
+                        <i data-lucide="package" class="w-5 h-5 text-indigo-400"></i>
+                        <span>Gestión Productos</span>
+                    </button>
+                    
+                    <button @click="switchTab('movements')" 
+                        :class="currentTab === 'movements' ? 'sidebar-link-active' : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all">
+                        <i data-lucide="arrow-left-right" class="w-5 h-5 text-indigo-400"></i>
+                        <span>Registrar Entradas / Salidas</span>
+                    </button>
+                    
+                    <button @click="switchTab('stock')" 
+                        :class="currentTab === 'stock' ? 'sidebar-link-active' : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all">
+                        <i data-lucide="search" class="w-5 h-5 text-indigo-400"></i>
+                        <span>Control de Stock</span>
+                    </button>
+
+                    <div class="pt-4 mt-4 border-t border-slate-900">
+                        <span class="px-3 block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Módulos Avanzados IA</span>
+                    </div>
+
+                    <button @click="switchTab('ai-patterns')" 
+                        :class="currentTab === 'ai-patterns' ? 'sidebar-link-active' : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all">
+                        <i data-lucide="trending-up" class="w-5 h-5 text-cyan-400"></i>
+                        <span>Detección de Patrones</span>
+                    </button>
+
+                    <button @click="switchTab('ai-anomalies')" 
+                        :class="currentTab === 'ai-anomalies' ? 'sidebar-link-active' : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'"
+                        class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="shield-alert" class="w-5 h-5 text-rose-400"></i>
+                            <span>Detección Anomalías</span>
+                        </div>
+                        <span x-show="unreadAnomaliesCount > 0" x-text="unreadAnomaliesCount"
+                            class="bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs px-2 py-0.5 rounded-full pulse-glow-rose"></span>
+                    </button>
+
+                    <button @click="switchTab('rules-engine')" 
+                        :class="currentTab === 'rules-engine' ? 'sidebar-link-active' : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all">
+                        <i data-lucide="sliders" class="w-5 h-5 text-emerald-400"></i>
+                        <span>Motor de Reglas IA</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Datos de Usuario e Iniciar Cierre -->
+            <div class="p-4 border-t border-slate-900 bg-[#08090d]/60">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-9 h-9 rounded-full bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center">
+                        <i data-lucide="user-cog" class="w-5 h-5 text-indigo-400"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-slate-200" x-text="user.username">admin</div>
+                        <div class="text-[10px] text-indigo-400 font-semibold uppercase tracking-widest" x-text="user.role">ADMINISTRADOR</div>
+                    </div>
+                </div>
+                <button @click="logout()" class="w-full py-2 px-3 rounded-lg bg-slate-900 hover:bg-rose-950/40 hover:text-rose-300 text-slate-400 text-xs font-semibold flex items-center justify-center gap-2 border border-slate-800 hover:border-rose-900/30 transition-all">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                    <span>Cerrar Sesión</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- ESPACIO DE CONTENIDO PRINCIPAL -->
+        <main class="flex-1 flex flex-col overflow-hidden bg-[#07080c] relative z-10">
+            
+            <!-- LIVE STOCK TICKER WIDGET -->
+            <div class="ticker-container select-none shrink-0">
+                <div class="ticker-wrap">
+                    <div class="ticker-move">
+                        <template x-for="p in products" :key="'ticker-' + p.id">
+                            <span class="ticker-item text-slate-300">
+                                <span class="font-bold" x-text="p.name"></span>
+                                <span class="text-indigo-400 font-extrabold" x-text="'$' + p.price.toFixed(2)"></span>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                                    :class="p.stock <= 0 ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : p.stock < p.min_stock ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'">
+                                    <span x-text="p.stock + ' uds'"></span>
+                                </span>
+                            </span>
+                        </template>
+                        <template x-if="products.length === 0">
+                            <span class="ticker-item text-cyan-400 font-bold uppercase tracking-wider flex items-center gap-2">
+                                <i data-lucide="sparkles" class="w-4 h-4 animate-spin"></i>
+                                <span>Base de datos vacía. Por favor, pobla el sistema usando el botón "Semilla IA" para ver fluctuaciones en tiempo real.</span>
+                            </span>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HEADER SUPERIOR -->
+            <header class="h-16 border-b border-slate-800/80 flex items-center justify-between px-8 bg-[#0a0b11]/80 backdrop-blur-md z-10 shrink-0">
+                <!-- Título dinámico -->
+                <div class="flex items-center gap-3">
+                    <span class="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span>
+                    <h2 class="text-lg font-bold text-white uppercase tracking-wider font-heading" x-text="
+                        currentTab === 'dashboard' ? 'Métricas en Tiempo Real' :
+                        currentTab === 'products' ? 'Catálogo de Inventario' :
+                        currentTab === 'movements' ? 'Registro de Movimientos' :
+                        currentTab === 'stock' ? 'Consulta de Stock' :
+                        currentTab === 'ai-patterns' ? 'Predicciones y Tendencias IA' :
+                        currentTab === 'ai-anomalies' ? 'Centro de Anomalías' :
+                        currentTab === 'rules-engine' ? 'Motor de Decisiones Autónomo' : 'SmartStock IA'
+                    "></h2>
+                </div>
+
+                <!-- Acciones Rápidas del Header -->
+                <div class="flex items-center gap-4">
+                    <!-- Botón Especial: Poblar Semilla IA (Solo si no hay datos) -->
+                    <button @click="seedDatabase()" 
+                        class="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white flex items-center gap-2 shadow-lg shadow-indigo-600/20 border border-indigo-400/20 transition-all">
+                        <i data-lucide="leaf" class="w-4 h-4"></i>
+                        <span>Poblar Base de Datos (Semilla IA)</span>
+                    </button>
+
+                    <!-- Notificaciones -->
+                    <button @click="switchTab('ai-anomalies')" class="relative p-2 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-800 transition-all">
+                        <i data-lucide="bell" class="w-5 h-5 text-slate-300"></i>
+                        <span x-show="unreadAnomaliesCount > 0" 
+                            class="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-rose-500 border border-slate-900 pulse-glow-rose"></span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- CONTENEDOR CENTRAL DE PANTALLAS (SCROLLABLE) -->
+            <div class="flex-1 overflow-y-auto p-8 relative">
+                
+                <!-- ==========================================
+                     TAB: DASHBOARD PRINCIPAL
+                     ========================================== -->
+                <div x-show="currentTab === 'dashboard'" class="space-y-8 page-fade-in" x-transition>
+                    <!-- Cards de Resumen General -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="glass glass-glow-indigo p-6 rounded-2xl relative overflow-hidden">
+                            <div class="absolute right-4 top-4 text-indigo-500/10"><i data-lucide="boxes" class="w-12 h-12"></i></div>
+                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Total Productos</span>
+                            <div class="text-3xl font-extrabold text-white mt-2 font-heading" x-text="stats.totalProducts">0</div>
+                            <p class="text-[10px] text-slate-500 mt-1">Registrados en catálogo</p>
+                        </div>
+                        <div class="glass glass-glow-cyan p-6 rounded-2xl relative overflow-hidden">
+                            <div class="absolute right-4 top-4 text-cyan-500/10"><i data-lucide="shopping-cart" class="w-12 h-12"></i></div>
+                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Stock Total</span>
+                            <div class="text-3xl font-extrabold text-white mt-2 font-heading" x-text="stats.totalStock">0</div>
+                            <p class="text-[10px] text-slate-500 mt-1">Unidades físicas</p>
+                        </div>
+                        <div class="glass glass-glow-rose p-6 rounded-2xl relative overflow-hidden" :class="stats.lowStockCount > 0 ? 'border-rose-500/35 bg-rose-950/5' : ''">
+                            <div class="absolute right-4 top-4 text-amber-500/10"><i data-lucide="alert-triangle" class="w-12 h-12"></i></div>
+                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Bajo Stock</span>
+                            <div class="text-3xl font-extrabold text-white mt-2 font-heading flex items-center gap-2 font-heading">
+                                <span x-text="stats.lowStockCount">0</span>
+                                <span x-show="stats.lowStockCount > 0" class="h-2.5 w-2.5 rounded-full bg-amber-500 animate-ping"></span>
+                            </div>
+                            <p class="text-[10px] mt-1 font-medium" :class="stats.lowStockCount > 0 ? 'text-rose-400 glow-text-rose' : 'text-slate-500'" x-text="stats.lowStockCount > 0 ? 'Requiere reabastecimiento' : 'Niveles adecuados'"></p>
+                        </div>
+                        <div class="glass glass-glow-cyan p-6 rounded-2xl relative overflow-hidden">
+                            <div class="absolute right-4 top-4 text-emerald-500/10"><i data-lucide="dollar-sign" class="w-12 h-12"></i></div>
+                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Valor del Inventario</span>
+                            <div class="text-3xl font-extrabold text-white mt-2 font-heading" x-text="'$' + stats.portfolioValue.toLocaleString('es-GT', {minimumFractionDigits: 2, maximumFractionDigits: 2})">$0.00</div>
+                            <p class="text-[10px] text-slate-500 mt-1">Valoración monetaria</p>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos del Dashboard -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2 glass p-6 rounded-2xl">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="font-bold text-white tracking-wide font-heading">Historial de Flujo de Mercancías</h3>
+                                <div class="flex gap-2">
+                                    <span class="inline-flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full"><span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>IN</span>
+                                    <span class="inline-flex items-center gap-1.5 text-xs text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full"><span class="h-1.5 w-1.5 rounded-full bg-indigo-400"></span>OUT</span>
+                                </div>
+                            </div>
+                            <div id="dashboard-trend-chart" class="w-full"></div>
+                        </div>
+
+                        <div class="glass p-6 rounded-2xl">
+                            <h3 class="font-bold text-white tracking-wide mb-6 font-heading">Distribución por Categorías</h3>
+                            <div id="dashboard-category-chart" class="w-full"></div>
+                        </div>
+                    </div>
+
+                    <!-- Enlaces Rápidos e Historial Reciente -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="glass p-6 rounded-2xl">
+                            <h3 class="font-bold text-white mb-4 font-heading">Acciones Rápidas</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button @click="openMovementModal('IN')" class="p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-300 font-semibold flex items-center justify-between transition-all">
+                                    <span>Registrar Entrada (IN)</span>
+                                    <i data-lucide="arrow-down-left" class="w-5 h-5"></i>
+                                </button>
+                                <button @click="openMovementModal('OUT')" class="p-4 rounded-xl border border-indigo-500/20 bg-indigo-500/5 hover:bg-indigo-500/10 text-indigo-300 font-semibold flex items-center justify-between transition-all">
+                                    <span>Registrar Venta (OUT)</span>
+                                    <i data-lucide="arrow-up-right" class="w-5 h-5"></i>
+                                </button>
+                                <button @click="openAddProductModal()" class="p-4 rounded-xl border border-cyan-500/20 bg-cyan-500/5 hover:bg-cyan-500/10 text-cyan-300 font-semibold flex items-center justify-between transition-all">
+                                    <span>Nuevo Producto</span>
+                                    <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                                </button>
+                                <button @click="runRulesEngine()" class="p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-300 font-semibold flex items-center justify-between transition-all">
+                                    <span>Correr Reglas IA</span>
+                                    <i data-lucide="play" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Panel de Últimos Eventos de Reglas IA -->
+                        <div class="glass p-6 rounded-2xl flex flex-col">
+                            <h3 class="font-bold text-white mb-4 font-heading flex items-center justify-between">
+                                <span>Ejecución del Motor IA en Tiempo Real</span>
+                                <span class="h-2 w-2 rounded-full bg-cyan-500 animate-pulse"></span>
+                            </h3>
+                            <div class="flex-1 max-h-[160px] overflow-y-auto space-y-2 text-xs">
+                                <template x-if="ruleLogs.length === 0">
+                                    <div class="text-slate-500 italic text-center py-8">
+                                        No se han registrado ejecuciones de reglas en esta sesión.
+                                    </div>
+                                </template>
+                                <template x-for="log in ruleLogs" :key="log.timestamp + log.product_id">
+                                    <div class="p-2.5 rounded-lg border bg-slate-950/40"
+                                        :class="log.type === 'anomaly_alert' ? 'border-rose-950/50 text-rose-200' : log.type === 'reorder' ? 'border-amber-950/50 text-amber-200' : 'border-cyan-950/50 text-cyan-200'">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <span class="font-bold font-heading uppercase" x-text="log.rule_name">Regla</span>
+                                            <span class="text-[10px] text-slate-500" x-text="new Date(log.timestamp).toLocaleTimeString()">Hora</span>
+                                        </div>
+                                        <div class="text-[11px]" x-text="log.message">Mensaje de acción disparado por IA.</div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- ==========================================
+                     TAB: GESTIÓN DE PRODUCTOS
+                     ========================================== -->
+                <div x-show="currentTab === 'products'" class="space-y-6 page-fade-in" x-transition>
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-xl text-white font-heading">Lista Completa de Productos</h3>
+                        <button @click="openAddProductModal()" class="btn-neon text-white font-bold py-2.5 px-5 rounded-xl flex items-center gap-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            <span>Agregar Producto</span>
+                        </button>
+                    </div>
+
+                    <!-- Tabla de Productos -->
+                    <div class="glass rounded-2xl overflow-hidden border border-slate-800">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-900/60 border-b border-slate-800 text-xs font-semibold text-slate-400 uppercase">
+                                        <th class="p-4">Producto</th>
+                                        <th class="p-4">Categoría</th>
+                                        <th class="p-4 text-right">Precio</th>
+                                        <th class="p-4 text-center">Nivel Stock</th>
+                                        <th class="p-4 text-center">Mín. Reorden</th>
+                                        <th class="p-4">Proveedor</th>
+                                        <th class="p-4 text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-sm divide-y divide-slate-800/60">
+                                    <template x-for="p in products" :key="p.id">
+                                        <tr class="hover:bg-slate-800/10 transition-colors">
+                                            <td class="p-4 font-semibold text-white" x-text="p.name">Nombre</td>
+                                            <td class="p-4 text-slate-400" x-text="p.category">Categoría</td>
+                                            <td class="p-4 text-right text-indigo-300 font-bold" x-text="'$' + p.price.toFixed(2)">Precio</td>
+                                            <td class="p-4 text-center">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                                    :class="p.stock <= 0 ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : p.stock < p.min_stock ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 pulse-glow-amber' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'">
+                                                    <span x-text="p.stock + ' uds'">0 uds</span>
+                                                </span>
+                                            </td>
+                                            <td class="p-4 text-center text-slate-300 font-medium" x-text="p.min_stock">0</td>
+                                            <td class="p-4 text-slate-400" x-text="p.supplier">Proveedor</td>
+                                            <td class="p-4 text-center">
+                                                <div class="inline-flex gap-2">
+                                                    <button @click="openEditProductModal(p)" class="p-1.5 hover:bg-slate-800 text-cyan-400 rounded-lg transition-all" title="Editar">
+                                                        <i data-lucide="edit" class="w-4 h-4"></i>
+                                                    </button>
+                                                    <button @click="confirmDeleteId = p.id" class="p-1.5 hover:bg-rose-950/30 text-rose-400 rounded-lg transition-all" title="Eliminar">
+                                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- ==========================================
+                     TAB: ENTRADAS Y SALIDAS DE INVENTARIO
+                     ========================================== -->
+                <div x-show="currentTab === 'movements'" class="space-y-6 page-fade-in" x-transition>
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-xl text-white font-heading">Transacciones y Ajustes de Stock</h3>
+                        <div class="flex gap-3">
+                            <button @click="openMovementModal('IN')" class="px-5 py-2.5 rounded-xl text-sm font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition-all">
+                                <i data-lucide="arrow-down-left" class="w-4 h-4"></i>
+                                <span>Registrar Entrada (IN)</span>
+                            </button>
+                            <button @click="openMovementModal('OUT')" class="px-5 py-2.5 rounded-xl text-sm font-bold bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-2 shadow-lg shadow-indigo-600/20 transition-all">
+                                <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+                                <span>Registrar Salida (OUT)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Historial de Movimientos -->
+                    <div class="glass rounded-2xl overflow-hidden border border-slate-800">
+                        <div class="p-4 bg-slate-900/30 border-b border-slate-800 flex justify-between items-center">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Bitácora Reciente</span>
+                            <span class="text-xs text-slate-500">Historial ordenado por tiempo real</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr class="border-b border-slate-800 text-xs font-semibold text-slate-400 uppercase bg-slate-900/20">
+                                        <th class="p-4">Fecha / Hora</th>
+                                        <th class="p-4">Producto</th>
+                                        <th class="p-4 text-center">Tipo</th>
+                                        <th class="p-4 text-center">Cantidad</th>
+                                        <th class="p-4 text-right">Precio Unitario</th>
+                                        <th class="p-4 text-right">Total</th>
+                                        <th class="p-4">Detalle / Notas</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-sm divide-y divide-slate-800/40">
+                                    <template x-for="m in movements" :key="m.id">
+                                        <tr class="hover:bg-slate-800/10 transition-colors">
+                                            <td class="p-4 text-slate-400 text-xs" x-text="new Date(m.date).toLocaleString()">Fecha</td>
+                                            <td class="p-4 text-white font-semibold" x-text="m.product_name">Producto</td>
+                                            <td class="p-4 text-center">
+                                                <span class="px-2 py-0.5 rounded-full text-xs font-bold"
+                                                    :class="m.type === 'IN' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'">
+                                                    <span x-text="m.type">IN</span>
+                                                </span>
+                                            </td>
+                                            <td class="p-4 text-center font-bold text-white" x-text="m.quantity">0</td>
+                                            <td class="p-4 text-right text-slate-400" x-text="'$' + m.price.toFixed(2)">$0.00</td>
+                                            <td class="p-4 text-right text-white font-bold" x-text="'$' + m.total_value.toFixed(2)">$0.00</td>
+                                            <td class="p-4 text-xs text-slate-400" x-text="m.type === 'IN' ? 'Proveedor: ' + m.supplier : 'Motivo: ' + m.reason">Notas</td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- ==========================================
+                     TAB: CONSULTA Y CONTROL DE STOCK (BÚSQUEDA Y FILTROS)
+                     ========================================== -->
+                <div x-show="currentTab === 'stock'" class="space-y-6 page-fade-in" x-data="{ searchQuery: '', selectedCategory: '', selectedStockLevel: '' }" x-transition>
+                    <!-- Caja de Filtros -->
+                    <div class="glass p-6 rounded-2xl grid grid-cols-1 md:grid-cols-3 gap-4 border border-slate-800">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Búsqueda por Nombre</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                                    <i data-lucide="search" class="w-4 h-4"></i>
+                                </span>
+                                <input type="text" x-model="searchQuery" placeholder="Ej: Laptop..."
+                                    class="w-full bg-[#12131e]/50 border border-slate-700/60 rounded-xl py-2 pl-9 pr-4 text-white placeholder-slate-500 transition-all">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Categoría</label>
+                            <select x-model="selectedCategory" class="w-full bg-[#12131e]/50 border border-slate-700/60 rounded-xl py-2 px-3 text-white transition-all">
+                                <option value="">Todas las Categorías</option>
+                                <option value="Tecnología">Tecnología</option>
+                                <option value="Alimentos">Alimentos</option>
+                                <option value="Ropa">Ropa</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Estado de Stock</label>
+                            <select x-model="selectedStockLevel" class="w-full bg-[#12131e]/50 border border-slate-700/60 rounded-xl py-2 px-3 text-white transition-all">
+                                <option value="">Todos los Estados</option>
+                                <option value="bajo">Bajo Stock (Punto Reorden)</option>
+                                <option value="agotado">Agotados (Stock Cero)</option>
+                                <option value="adecuado">Adecuado (Stock Suficiente)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Listado Filtrado -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <template x-for="p in products.filter(p => {
+                            const matchQuery = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+                            const matchCategory = !selectedCategory || p.category === selectedCategory;
+                            let matchStock = true;
+                            if (selectedStockLevel === 'bajo') matchStock = p.stock < p.min_stock && p.stock > 0;
+                            else if (selectedStockLevel === 'agotado') matchStock = p.stock <= 0;
+                            else if (selectedStockLevel === 'adecuado') matchStock = p.stock >= p.min_stock;
+                            
+                            return matchQuery && matchCategory && matchStock;
+                        })" :key="p.id">
+                            <div class="glass p-5 rounded-2xl border border-slate-800 flex flex-col justify-between">
+                                <div>
+                                    <div class="flex justify-between items-start mb-3">
+                                        <span class="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider" x-text="p.category">Categoría</span>
+                                        <span class="text-xs font-bold text-slate-400" x-text="'SKU: #' + (p.id * 1024)">#SKU</span>
+                                    </div>
+                                    <h4 class="font-bold text-white text-base mb-2 font-heading" x-text="p.name">Nombre del Producto</h4>
+                                    
+                                    <div class="grid grid-cols-2 gap-2 my-4 bg-slate-900/30 p-3 rounded-xl text-center">
+                                        <div>
+                                            <span class="text-[10px] text-slate-500 block uppercase">Stock</span>
+                                            <span class="text-xl font-bold font-heading" 
+                                                :class="p.stock <= 0 ? 'text-rose-400' : p.stock < p.min_stock ? 'text-amber-400' : 'text-emerald-400'"
+                                                x-text="p.stock + ' uds'">0</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-[10px] text-slate-500 block uppercase">Precio</span>
+                                            <span class="text-xl font-bold text-indigo-300 font-heading" x-text="'$' + p.price.toFixed(2)">$0.00</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4 border-t border-slate-800/60 pt-4 flex justify-between items-center text-xs">
+                                    <div class="text-slate-500">
+                                        Mínimo Reorden: <span class="font-semibold text-slate-300" x-text="p.min_stock">0</span>
+                                    </div>
+                                    <button @click="openMovementModal('IN', p.id)" class="text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1">
+                                        <span>Abastecer</span>
+                                        <i data-lucide="plus" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+
+                <!-- ==========================================
+                     TAB: MODULO IA 3.1 - DETECCIÓN DE PATRONES Y PROYECCIÓN
+                     ========================================== -->
+                <div x-show="currentTab === 'ai-patterns'" class="space-y-6 page-fade-in" x-transition>
+                    <!-- Scanner Header -->
+                    <div class="glass-glow-cyan glass p-6 rounded-2xl relative overflow-hidden border border-cyan-500/20">
+                        <div class="scanner-line"></div>
+                        <div class="flex items-center gap-4 relative z-10">
+                            <div class="p-3 bg-cyan-500/10 rounded-xl border border-cyan-500/30">
+                                <i data-lucide="brain-circuit" class="w-8 h-8 text-cyan-400 glow-text-cyan"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-extrabold text-white font-heading">Holograma de Demanda Predictiva</h3>
+                                <p class="text-xs text-slate-400 mt-1">
+                                    Selecciona un producto para proyectar la demanda futura para los siguientes 7 días mediante algoritmos estadísticos y Gemini.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Selector de Producto -->
+                    <div class="glass p-5 rounded-2xl flex flex-col md:flex-row md:items-center gap-4 border border-slate-800">
+                        <div class="flex-1">
+                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Producto para Análisis</label>
+                            <select x-model="selectedProductIdPatterns" @change="selectProductForPatterns()" 
+                                class="w-full bg-[#12131e]/50 border border-slate-700/60 rounded-xl py-3 px-4 text-white transition-all font-heading">
+                                <option value="">Selecciona un producto...</option>
+                                <template x-for="p in products" :key="p.id">
+                                    <option :value="p.id" x-text="p.name"></option>
+                                </template>
+                            </select>
+                        </div>
+                        
+                        <div x-show="loadingAI" class="flex items-center gap-2 text-cyan-400 text-xs font-semibold py-2 px-4 rounded-xl border border-cyan-500/20 bg-cyan-500/5">
+                            <span class="animate-spin rounded-full h-4 w-4 border-2 border-cyan-400 border-t-transparent"></span>
+                            <span>IA Computando Proyecciones en tiempo real...</span>
+                        </div>
+                    </div>
+
+                    <!-- Resultados del Análisis de IA -->
+                    <div x-show="aiPatternsData && !loadingAI" class="grid grid-cols-1 lg:grid-cols-3 gap-6 slide-in-right">
+                        <!-- Reporte Ejecutivo Gemini -->
+                        <div class="lg:col-span-1 glass glass-glow-cyan p-6 rounded-2xl flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center gap-2 mb-4">
+                                    <i data-lucide="sparkles" class="w-5 h-5 text-cyan-400"></i>
+                                    <h4 class="font-bold text-white text-md font-heading uppercase">Análisis Ejecutivo IA</h4>
+                                </div>
+                                <div class="text-xs text-slate-300 leading-relaxed space-y-3 prose max-h-[300px] overflow-y-auto" x-html="aiPatternsData?.ai_report.replace(/\n/g, '<br>')">
+                                    Cargando diagnóstico ejecutivo...
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6 border-t border-slate-800 pt-4 text-[10px] text-slate-500 flex justify-between">
+                                <span>Algoritmo: Regresión Ponderada IA</span>
+                                <span>Estado: 100% Preciso</span>
+                            </div>
+                        </div>
+
+                        <!-- Gráfico de Proyección y Datos Semanales -->
+                        <div class="lg:col-span-2 space-y-6">
+                            <!-- Gráfico ApexCharts -->
+                            <div class="glass p-6 rounded-2xl">
+                                <div id="ai-forecast-chart"></div>
+                            </div>
+
+                            <!-- Métricas de Estacionalidad -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="glass p-4 rounded-xl">
+                                    <span class="text-[10px] text-slate-500 block uppercase font-bold">Estacionalidad Detectada</span>
+                                    <span class="text-sm font-semibold text-white mt-1 block" x-text="aiPatternsData?.seasonality">Tendencia</span>
+                                </div>
+                                <div class="glass p-4 rounded-xl">
+                                    <span class="text-[10px] text-slate-500 block uppercase font-bold">Mes / Periodo de Mayor Pico</span>
+                                    <span class="text-sm font-semibold text-cyan-400 mt-1 block font-heading" x-text="aiPatternsData?.peak_season">Navidad</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Estado Vacío -->
+                    <div x-show="!aiPatternsData && !loadingAI" class="glass p-12 rounded-2xl border border-slate-800 text-center">
+                        <div class="inline-flex p-3 rounded-2xl bg-slate-900/80 mb-3 text-slate-600">
+                            <i data-lucide="area-chart" class="w-10 h-10"></i>
+                        </div>
+                        <h4 class="text-white font-bold font-heading">Sin Datos Proyectados</h4>
+                        <p class="text-xs text-slate-500 mt-1">Selecciona un producto del catálogo de arriba para realizar el escaneo de demanda.</p>
+                    </div>
+                </div>
+
+
+                <!-- ==========================================
+                     TAB: MODULO IA 3.2 - DETECCIÓN DE ANOMALÍAS
+                     ========================================== -->
+                <div x-show="currentTab === 'ai-anomalies'" class="space-y-6 page-fade-in" x-transition>
+                    <div class="glass-glow-rose glass p-6 rounded-2xl border border-rose-500/20">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="p-3 bg-rose-500/10 rounded-xl border border-rose-500/30">
+                                    <i data-lucide="shield-alert" class="w-8 h-8 text-rose-500 glow-text-rose animate-pulse"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-extrabold text-white font-heading">Monitoreo de Anomalías Críticas</h3>
+                                    <p class="text-xs text-slate-400 mt-1">
+                                        Escaneo inteligente en tiempo real que analiza desviaciones estadísticas y eventos irregulares en las transacciones físicas.
+                                    </p>
+                                </div>
+                            </div>
+                            <button @click="loadAnomalies()" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-rose-400 border border-rose-950 flex items-center gap-2 transition-all">
+                                <i data-lucide="refresh-cw" class="w-4 h-4" :class="loadingAnomalies ? 'animate-spin' : ''"></i>
+                                <span>Ejecutar Escáner IA</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Listado de Anomalías -->
+                    <div class="space-y-4">
+                        <template x-if="anomalies.length === 0">
+                            <div class="glass p-12 rounded-2xl border border-slate-800 text-center">
+                                <div class="inline-flex p-3 rounded-2xl bg-slate-900/80 mb-3 text-slate-600">
+                                    <i data-lucide="shield-check" class="w-10 h-10 text-emerald-500"></i>
+                                </div>
+                                <h4 class="text-white font-bold font-heading">¡Sistema Seguro y Estable!</h4>
+                                <p class="text-xs text-slate-500 mt-1">No se han registrado anomalías. Los flujos de stock están operando bajo condiciones normales.</p>
+                            </div>
+                        </template>
+
+                        <template x-for="a in anomalies" :key="a.id">
+                            <div class="glass p-5 rounded-2xl border flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all"
+                                :class="a.resolved ? 'border-slate-800/80 opacity-60' : a.gravity === 'Alta' ? 'border-rose-500/20 bg-rose-950/5' : 'border-amber-500/20 bg-amber-950/5'">
+                                <div class="flex-1 space-y-2">
+                                    <div class="flex items-center gap-3">
+                                        <!-- Gravedad Badge -->
+                                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                                            :class="a.resolved ? 'bg-slate-800 text-slate-400' : a.gravity === 'Alta' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'">
+                                            <span x-text="'Gravedad: ' + a.gravity">Media</span>
+                                        </span>
+
+                                        <span class="text-xs text-slate-500" x-text="new Date(a.date).toLocaleString()">Fecha</span>
+                                    </div>
+                                    
+                                    <h4 class="font-bold text-white text-sm md:text-base font-heading" x-text="a.description">Descripción</h4>
+                                    
+                                    <div class="flex gap-4 text-xs text-slate-400">
+                                        <span>Producto Implicado: <strong class="text-slate-300" x-text="a.product_name">iPhone</strong></span>
+                                        <span>Valor Estimado: <strong class="text-rose-300 font-bold" x-text="'$' + a.value.toFixed(2)">$0.00</strong></span>
+                                    </div>
+                                </div>
+
+                                <div class="shrink-0">
+                                    <template x-if="!a.resolved">
+                                        <button @click="resolveAnomaly(a.id)" class="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white flex items-center gap-1.5 transition-all shadow-lg shadow-rose-600/15">
+                                            <i data-lucide="check" class="w-4 h-4"></i>
+                                            <span>Resolver e Ignorar</span>
+                                        </button>
+                                    </template>
+                                    <template x-if="a.resolved">
+                                        <span class="inline-flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20 font-semibold">
+                                            <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                                            <span>Resuelto / Auditado</span>
+                                        </span>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+
+                <!-- ==========================================
+                     TAB: MODULO IA 3.3 - MOTOR DE REGLAS
+                     ========================================== -->
+                <div x-show="currentTab === 'rules-engine'" class="space-y-6 page-fade-in" x-transition>
+                    <div class="glass-glow-indigo glass p-6 rounded-2xl border border-indigo-500/20">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="p-3 bg-indigo-500/10 rounded-xl border border-indigo-500/30">
+                                    <i data-lucide="sliders" class="w-8 h-8 text-indigo-400 glow-text-indigo"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-extrabold text-white font-heading">Consola de Decisiones Autónomas</h3>
+                                    <p class="text-xs text-slate-400 mt-1">
+                                        Activa o desactiva las directrices operativas que el agente inteligente ejecuta al instante cuando detecta movimientos inusuales o stock crítico.
+                                    </p>
+                                </div>
+                            </div>
+                            <button @click="runRulesEngine(true)" class="px-4 py-2.5 rounded-xl text-xs font-bold btn-neon text-white flex items-center gap-2 shadow-lg shadow-indigo-600/20">
+                                <i data-lucide="play" class="w-4 h-4"></i>
+                                <span>Ejecutar Reglas Ahora</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Panel Central de Reglas -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Switchboard de Reglas -->
+                        <div class="lg:col-span-2 space-y-4">
+                            <h4 class="font-bold text-white uppercase tracking-wider text-xs mb-2">Reglas del Sistema Operando</h4>
+                            
+                            <template x-for="r in rules" :key="r.id">
+                                <div class="glass p-5 rounded-2xl border border-slate-800 flex justify-between items-center transition-all"
+                                    :class="r.is_active ? 'border-indigo-500/20 bg-indigo-950/5' : 'opacity-50'">
+                                    <div class="space-y-1">
+                                        <h4 class="font-bold text-white text-base font-heading" x-text="r.name">Nombre Regla</h4>
+                                        <p class="text-xs text-slate-400" x-text="
+                                            r.rule_type === 'reorder' ? 'Auto-genera una Orden de Compra cuando el Stock físico desciende por debajo de su valor mínimo estipulado.' :
+                                            r.rule_type === 'anomaly_alert' ? 'Dispara una notificación push urgente de auditoría si el escáner reporta movimientos masivos o fuera de horario comercial.' :
+                                            r.rule_type === 'auto_min_stock' ? 'IA recalcula dinámicamente el stock mínimo de cada producto usando la previsión de demanda semanal.' : 'Regla configurable'
+                                        "></p>
+                                        <div class="text-[10px] text-slate-500 flex gap-4 pt-1">
+                                            <span x-text="'Tipo: ' + r.rule_type">Tipo</span>
+                                            <span x-text="r.last_triggered ? 'Último disparo: ' + new Date(r.last_triggered).toLocaleTimeString() : 'Nunca disparada'">Disparo</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Switch Toggle -->
+                                    <button @click="toggleRule(r)" class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-0"
+                                        :class="r.is_active ? 'bg-indigo-600' : 'bg-slate-700'">
+                                        <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                                            :class="r.is_active ? 'translate-x-5' : 'translate-x-0'"></span>
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Terminal de Registro en Vivo -->
+                        <div class="lg:col-span-1 glass glass-glow-indigo p-5 rounded-2xl flex flex-col border border-indigo-500/20">
+                            <h4 class="font-bold text-white text-xs uppercase tracking-wider mb-4 font-heading flex items-center gap-2">
+                                <i data-lucide="terminal" class="w-4 h-4 text-indigo-400"></i>
+                                <span>Logs de Ejecución Reciente</span>
+                            </h4>
+                            
+                            <div class="flex-1 bg-slate-950/70 p-4 rounded-xl border border-slate-900 font-mono text-[10px] text-indigo-300 space-y-3 overflow-y-auto max-h-[350px]">
+                                <template x-if="lastRuleEvaluationLogs.length === 0 && ruleLogs.length === 0">
+                                    <div class="text-slate-600 italic text-center py-12">
+                                        [SISTEMA LISTO] Esperando evaluaciones automáticas...
+                                    </div>
+                                </template>
+                                <template x-for="log in lastRuleEvaluationLogs.length ? lastRuleEvaluationLogs : ruleLogs" :key="log.timestamp + log.message">
+                                    <div class="border-b border-indigo-950/30 pb-2">
+                                        <div class="flex justify-between text-indigo-500 font-bold mb-1">
+                                            <span x-text="log.rule_name">RULE</span>
+                                            <span x-text="new Date(log.timestamp).toLocaleTimeString()">00:00</span>
+                                        </div>
+                                        <div class="text-slate-300" x-text="log.message">Mensaje</div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+
+    <!-- ==========================================
+         FLOAT TOAST NOTIFICATIONS POPUP
+         ========================================== -->
+    <div class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+        <template x-for="toast in toasts" :key="toast.id">
+            <div class="glass p-4 rounded-xl border flex items-start gap-3 shadow-2xl pointer-events-auto transition-all duration-300 translate-y-0"
+                :class="
+                    toast.type === 'error' ? 'border-rose-500/30 bg-rose-950/40 text-rose-200' :
+                    toast.type === 'warning' ? 'border-amber-500/30 bg-amber-950/40 text-amber-200' :
+                    toast.type === 'info' ? 'border-cyan-500/30 bg-cyan-950/40 text-cyan-200' : 'border-emerald-500/30 bg-emerald-950/40 text-emerald-200'
+                ">
+                
+                <div class="shrink-0 mt-0.5">
+                    <template x-if="toast.type === 'error'"><i data-lucide="x-circle" class="w-5 h-5 text-rose-400"></i></template>
+                    <template x-if="toast.type === 'warning'"><i data-lucide="alert-triangle" class="w-5 h-5 text-amber-400"></i></template>
+                    <template x-if="toast.type === 'info'"><i data-lucide="sparkles" class="w-5 h-5 text-cyan-400"></i></template>
+                    <template x-if="toast.type === 'success'"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400"></i></template>
+                </div>
+                
+                <div class="flex-1 text-xs font-semibold leading-relaxed" x-text="toast.message">Notificación del sistema</div>
+            </div>
+        </template>
+    </div>
+
+
+    <!-- ==========================================
+         MODALES Y PANELES OVERLAYS (GLASS DESIGN)
+         ========================================== -->
+    
+    <!-- A. MODAL CRUD PRODUCTO (SLIDER DERECHO GIGANTE) -->
+    <div x-show="isProductModalOpen" class="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm" x-transition>
+        <!-- Backdrop close -->
+        <div class="absolute inset-0" @click="isProductModalOpen = false"></div>
+        
+        <!-- Panel content -->
+        <div class="w-full max-w-md glass border-l border-slate-800 h-full p-8 flex flex-col justify-between relative z-10 slide-in-right">
+            <div>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-extrabold text-white text-xl font-heading" x-text="isEditMode ? 'Editar Producto Existente' : 'Agregar Nuevo Producto'">Producto</h3>
+                    <button @click="isProductModalOpen = false" class="p-1 text-slate-400 hover:text-white rounded-lg">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+
+                <form @submit.prevent="saveProduct()" id="product-form" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Nombre del Producto</label>
+                        <input type="text" x-model="productForm.name" required placeholder="Ej: Mouse Logitech MX Master 3"
+                            class="w-full bg-[#12131e]/50 border border-slate-700/60 rounded-xl py-2 px-3 text-white text-sm transition-all">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Categoría</label>
+                        <select x-model="productForm.category" class="w-full bg-[#12131e]/50 border border-slate-700/60 rounded-xl py-2 px-3 text-white text-sm transition-all">
+                            <option value="Tecnología">Tecnología</option>
+                            <option value="Alimentos">Alimentos</option>
+                            <option value="Ropa">Ropa</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Precio Unitario ($)</label>
+                            <input type="number" step="0.01" min="0.01" x-model="productForm.price" required
+                                class="w-full bg-[#12131e]/50 border border-slate-700/60 rounded-xl py-2 px-3 text-white text-sm transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Stock Físico Inicial</label>
+                            <input type="number" min="0" x-model="productForm.stock" required :disabled="isEditMode"
+                                class="w-full bg-[#12131e]/50 border border-slate-700/60 rounded-xl py-2 px-3 text-white text-sm transition-all disabled:opacity-50">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Stock Mínimo (Punto Reorden)</label>
+                        <input type="number" min="1" x-model="productForm.min_stock" required
+                            class="w-full bg-[#12131e]/50 border border-slate-700/60 rounded-xl py-2 px-3 text-white text-sm transition-all">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Proveedor Oficial</label>
+                        <input type="text" x-model="productForm.supplier" required placeholder="Ej: HP Distribuidora Latam"
+                            class="w-full bg-[#12131e]/50 border border-slate-700/60 rounded-xl py-2 px-3 text-white text-sm transition-all">
+                    </div>
+                </form>
+            </div>
+
+            <div class="flex gap-3 pt-6 border-t border-slate-800">
+                <button type="button" @click="isProductModalOpen = false" class="w-1/3 bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-all">
+                    Cancelar
+                </button>
+                <button type="submit" form="product-form" class="w-2/3 btn-neon text-white font-bold py-2.5 rounded-xl text-sm shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2">
+                    <span x-text="isEditMode ? 'Actualizar Producto' : 'Crear Producto'">Crear</span>
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- B. MODAL REGISTRAR MOVIMIENTO (IN / OUT) -->
+    <div x-show="isMovementModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" x-transition>
+        <div class="w-full max-w-md glass border border-slate-800 rounded-2xl p-6 relative">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-extrabold text-white text-lg font-heading flex items-center gap-2">
+                    <template x-if="movementForm.type === 'IN'"><i data-lucide="arrow-down-left" class="w-5 h-5 text-emerald-400"></i></template>
+                    <template x-if="movementForm.type === 'OUT'"><i data-lucide="arrow-up-right" class="w-5 h-5 text-indigo-400"></i></template>
+                    <span x-text="movementForm.type === 'IN' ? 'Ingreso de Mercancía (Entrada)' : 'Venta / Salida de Producto'">Movimiento</span>
+                </h3>
+                <button @click="isMovementModalOpen = false" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form @submit.prevent="registerMovement()" id="movement-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Seleccionar Producto</label>
+                    <select x-model="movementForm.product_id" required class="w-full bg-[#12131e]/50 border border-slate-700/60 rounded-xl py-2 px-3 text-white text-sm transition-all">
+                        <option value="">Selecciona...</option>
+                        <template x-for="p in products" :key="p.id">
+                            <option :value="p.id" x-text="p.name + ' (Disponibles: ' + p.stock + ')'"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Cantidad</label>
+                    <input type="number" min="1" x-model="movementForm.quantity" required
+                        class="w-full bg-[#12131e]/50 border border-slate-700/60 rounded-xl py-2 px-3 text-white text-sm transition-all">
+                </div>
+
+                <!-- Campo dinámico para Entrada (IN) -->
+                <div x-show="movementForm.type === 'IN'">
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Proveedor del Lote</label>
+                    <input type="text" x-model="movementForm.supplier" :required="movementForm.type === 'IN'" placeholder="Proveedor oficial"
+                        class="w-full bg-[#12131e]/50 border border-slate-700/60 rounded-xl py-2 px-3 text-white text-sm transition-all">
+                </div>
+
+                <!-- Campo dinámico para Salida (OUT) -->
+                <div x-show="movementForm.type === 'OUT'">
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Razón / Notas de Venta</label>
+                    <input type="text" x-model="movementForm.reason" :required="movementForm.type === 'OUT'" placeholder="Venta de mostrador, rotura, etc."
+                        class="w-full bg-[#12131e]/50 border border-slate-700/60 rounded-xl py-2 px-3 text-white text-sm transition-all">
+                </div>
+            </form>
+
+            <div class="flex gap-3 pt-6 border-t border-slate-800/80 mt-6">
+                <button type="button" @click="isMovementModalOpen = false" class="w-1/3 bg-slate-800 text-white font-semibold py-2 rounded-xl text-sm transition-all">
+                    Cancelar
+                </button>
+                <button type="submit" form="movement-form" class="w-2/3 text-white font-bold py-2 rounded-xl text-sm shadow-lg flex items-center justify-center gap-1.5"
+                    :class="movementForm.type === 'IN' ? 'btn-neon-cyan shadow-cyan-600/15' : 'btn-neon shadow-indigo-600/15'">
+                    <span>Confirmar Transacción</span>
+                    <i data-lucide="arrow-right-left" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- C. MODAL DE CONFIRMACIÓN DE ELIMINACIÓN -->
+    <div x-show="confirmDeleteId !== null" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" x-transition>
+        <div class="w-full max-w-sm glass border border-rose-500/20 rounded-2xl p-6 relative">
+            <div class="text-center mb-6">
+                <div class="inline-flex p-3 rounded-full bg-rose-500/10 text-rose-500 mb-3 border border-rose-500/20">
+                    <i data-lucide="alert-triangle" class="w-8 h-8 animate-bounce"></i>
+                </div>
+                <h3 class="font-extrabold text-white text-lg font-heading">¿Confirmas la Eliminación?</h3>
+                <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                    Esta acción es **permanente**. Se eliminará el producto del catálogo y todos sus históricos de movimientos relacionados en la base de datos de Clever Cloud.
+                </p>
+            </div>
+
+            <div class="flex gap-3">
+                <button @click="confirmDeleteId = null" class="w-1/2 bg-slate-800 text-white py-2 rounded-xl text-xs font-semibold hover:bg-slate-700 transition-all">
+                    Cancelar
+                </button>
+                <button @click="deleteProduct(confirmDeleteId)" class="w-1/2 bg-rose-600 hover:bg-rose-500 text-white py-2 rounded-xl text-xs font-bold shadow-lg shadow-rose-500/15 transition-all">
+                    Sí, Eliminar Producto
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- D. ESCÁNER HOLOGRÁFICO DE PANTALLA COMPLETA (CARGANDO SEMILLA) -->
+    <div x-show="loadingSeed" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#07080c]/90 backdrop-blur-md" x-transition>
+        <div class="w-72 p-6 glass glass-glow-cyan text-center relative overflow-hidden rounded-2xl">
+            <div class="scanner-line h-1 bg-cyan-400 absolute left-0 right-0"></div>
+            <div class="relative z-10 space-y-4">
+                <i data-lucide="cloud-lightning" class="w-12 h-12 text-cyan-400 glow-text-cyan mx-auto animate-pulse"></i>
+                <h4 class="font-bold text-white tracking-widest font-heading">SEMBRANDO BD CLOUD</h4>
+                <p class="text-[10px] text-slate-400 leading-relaxed uppercase">
+                    Generando catálogo base, 60 transacciones históricas, patrones semanales estacionales y anomalías de seguridad...
+                </p>
+                <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-800">
+                    <div class="bg-cyan-500 h-full w-full rounded-full animate-[loading_1.5s_infinite]"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script inicialización Lucide icons -->
+    <script>
+        // Inicializar iconos al cargar la página
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+        
+        // Re-escaneo de Lucide icons en cambios de Alpine
+        document.addEventListener('alpine:initialized', () => {
+            Alpine.effect(() => {
+                // Forzar refresco de Lucide en el siguiente tick del DOM
+                setTimeout(() => {
+                    lucide.createIcons();
+                }, 50);
+            });
+        });
+    </script>
+</body>
+</html>

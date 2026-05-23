@@ -1,0 +1,368 @@
+/* ==========================================
+   SmartStock IA - Custom Cyber-Glassmorphism
+   ========================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    --bg-dark: #0a0b10;
+    --bg-card: rgba(18, 20, 29, 0.7);
+    --border-glass: rgba(255, 255, 255, 0.08);
+    --border-glow: rgba(99, 102, 241, 0.25);
+    
+    --neon-indigo: #6366f1;
+    --neon-cyan: #06b6d4;
+    --neon-rose: #f43f5e;
+    --neon-amber: #f59e0b;
+    --neon-emerald: #10b981;
+    
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+}
+
+/* Outfit Font for Headings */
+h1, h2, h3, h4, .font-heading {
+    font-family: 'Outfit', sans-serif;
+}
+
+/* Glassmorphism Effect */
+.glass {
+    background: var(--bg-card);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-glass);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass:hover {
+    border-color: rgba(99, 102, 241, 0.2);
+    box-shadow: 0 10px 30px -15px rgba(99, 102, 241, 0.15);
+}
+
+/* Glowing Border for AI Modules */
+.glass-glow-indigo {
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    box-shadow: 0 0 15px -3px rgba(99, 102, 241, 0.1);
+}
+
+.glass-glow-cyan {
+    border: 1px solid rgba(6, 182, 212, 0.3);
+    box-shadow: 0 0 15px -3px rgba(6, 182, 212, 0.1);
+}
+
+.glass-glow-rose {
+    border: 1px solid rgba(244, 63, 94, 0.3);
+    box-shadow: 0 0 15px -3px rgba(244, 63, 94, 0.1);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #0d0e14;
+}
+::-webkit-scrollbar-thumb {
+    background: #27273a;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--neon-indigo);
+}
+
+/* Slide in animation for panel */
+.slide-in-right {
+    animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Neon Glow utilities */
+.glow-text-indigo {
+    text-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+}
+.glow-text-cyan {
+    text-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+}
+.glow-text-rose {
+    text-shadow: 0 0 10px rgba(244, 63, 94, 0.5);
+}
+
+/* Alarm Pulse Animation */
+.pulse-glow-rose {
+    animation: pulseGlowRose 2s infinite;
+}
+
+@keyframes pulseGlowRose {
+    0% {
+        box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(244, 63, 94, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(244, 63, 94, 0);
+    }
+}
+
+/* Pulse Glow Amber for warning stock */
+.pulse-glow-amber {
+    animation: pulseGlowAmber 2s infinite;
+}
+
+@keyframes pulseGlowAmber {
+    0% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 8px rgba(245, 158, 11, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+    }
+}
+
+/* Custom button states */
+.btn-neon {
+    background: linear-gradient(135deg, var(--neon-indigo), #4f46e5);
+    transition: all 0.3s ease;
+}
+
+.btn-neon:hover {
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+    transform: translateY(-1px);
+}
+
+.btn-neon-cyan {
+    background: linear-gradient(135deg, var(--neon-cyan), #0891b2);
+    transition: all 0.3s ease;
+}
+
+.btn-neon-cyan:hover {
+    box-shadow: 0 0 15px rgba(6, 182, 212, 0.5);
+    transform: translateY(-1px);
+}
+
+/* Custom Loader */
+.scanner-line {
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(to right, transparent, var(--neon-cyan), transparent);
+    position: relative;
+    animation: scan 2s linear infinite;
+}
+
+@keyframes scan {
+    0% {
+        top: 0%;
+    }
+    50% {
+        top: 100%;
+    }
+    100% {
+        top: 0%;
+    }
+}
+
+/* Form Input Focus Effects */
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--neon-cyan) !important;
+    box-shadow: 0 0 15px rgba(6, 182, 212, 0.3) !important;
+    background: rgba(18, 20, 29, 0.85) !important;
+}
+
+/* Active tab styles */
+.sidebar-link-active {
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.2) 0%, transparent 100%);
+    border-left: 4px solid var(--neon-indigo);
+    color: var(--text-primary);
+    box-shadow: inset 4px 0 10px rgba(99, 102, 241, 0.1);
+}
+
+/* Skeleton Loading Animation */
+.skeleton {
+    background: linear-gradient(90deg, #181926 25%, #25263a 50%, #181926 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* ==========================================
+   Cybernetic Decorative Features & Animations
+   ========================================== */
+
+/* Floating decorative background orbs */
+.bg-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(130px);
+    opacity: 0.12;
+    z-index: 0;
+    pointer-events: none;
+    mix-blend-mode: screen;
+}
+.orb-indigo {
+    background: radial-gradient(circle, var(--neon-indigo) 0%, transparent 70%);
+    width: 600px;
+    height: 600px;
+    top: 5%;
+    left: 10%;
+    animation: floatOrb 22s infinite ease-in-out;
+}
+.orb-cyan {
+    background: radial-gradient(circle, var(--neon-cyan) 0%, transparent 70%);
+    width: 500px;
+    height: 500px;
+    bottom: 10%;
+    right: 15%;
+    animation: floatOrb 18s infinite ease-in-out alternate;
+}
+.orb-rose {
+    background: radial-gradient(circle, var(--neon-rose) 0%, transparent 70%);
+    width: 400px;
+    height: 400px;
+    top: 50%;
+    left: 40%;
+    animation: floatOrb 25s infinite ease-in-out;
+}
+
+@keyframes floatOrb {
+    0% {
+        transform: translate(0px, 0px) scale(1);
+    }
+    33% {
+        transform: translate(80px, -50px) scale(1.08);
+    }
+    66% {
+        transform: translate(-40px, 40px) scale(0.96);
+    }
+    100% {
+        transform: translate(0px, 0px) scale(1);
+    }
+}
+
+/* Cyber-grid backdrop overlay */
+.cyber-grid {
+    background-size: 40px 40px;
+    background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Dynamic Live Stock Ticker */
+.ticker-container {
+    width: 100%;
+    overflow: hidden;
+    background: rgba(10, 11, 17, 0.7);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    height: 40px;
+    display: flex;
+    align-items: center;
+    z-index: 10;
+    position: relative;
+    user-select: none;
+}
+
+.ticker-wrap {
+    display: flex;
+    width: 100%;
+    overflow: hidden;
+}
+
+.ticker-move {
+    display: flex;
+    white-space: nowrap;
+    animation: tickerLoop 40s linear infinite;
+    padding-left: 20%;
+}
+
+.ticker-move:hover {
+    animation-play-state: paused;
+    cursor: pointer;
+}
+
+.ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 2.5rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@keyframes tickerLoop {
+    0% {
+        transform: translate3d(0, 0, 0);
+    }
+    100% {
+        transform: translate3d(-100%, 0, 0);
+    }
+}
+
+/* Premium Card Hover Glows */
+.glass-glow-cyan:hover {
+    border-color: rgba(6, 182, 212, 0.5) !important;
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.2) !important;
+}
+.glass-glow-indigo:hover {
+    border-color: rgba(99, 102, 241, 0.5) !important;
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.2) !important;
+}
+.glass-glow-rose:hover {
+    border-color: rgba(244, 63, 94, 0.5) !important;
+    box-shadow: 0 0 20px rgba(244, 63, 94, 0.2) !important;
+}
+
+/* Page fade-in slide */
+.page-fade-in {
+    animation: pageFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes pageFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
