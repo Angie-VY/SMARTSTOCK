@@ -4,8 +4,9 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 import datetime
 from app.database import get_db
-from app.models import Product, Movement
+from app.models import Product, Movement, User
 from app.services import rules_engine
+from app.dependencies import get_current_user
 
 router = APIRouter(prefix="/movements", tags=["movements"])
 
@@ -22,7 +23,7 @@ class MovementOutputSchema(BaseModel):
     price: Optional[float] = Field(None, ge=0.0)
 
 @router.get("/")
-def get_movements_history(db: Session = Depends(get_db)):
+def get_movements_history(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     # Retorna el historial ordenado por fecha descendente con detalles de producto
     results = db.query(Movement, Product.name, Product.category)\
         .join(Product, Movement.product_id == Product.id)\
@@ -46,7 +47,7 @@ def get_movements_history(db: Session = Depends(get_db)):
     return history
 
 @router.post("/in")
-def register_input(req: MovementInputSchema, db: Session = Depends(get_db)):
+def register_input(req: MovementInputSchema, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     product = db.query(Product).filter(Product.id == req.product_id).first()
     if not product:
         raise HTTPException(
@@ -93,7 +94,7 @@ def register_input(req: MovementInputSchema, db: Session = Depends(get_db)):
     }
 
 @router.post("/out")
-def register_output(req: MovementOutputSchema, db: Session = Depends(get_db)):
+def register_output(req: MovementOutputSchema, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     product = db.query(Product).filter(Product.id == req.product_id).first()
     if not product:
         raise HTTPException(

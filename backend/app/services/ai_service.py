@@ -1,30 +1,58 @@
 import os
 import random
 import datetime
+import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models import Product, Movement, Anomaly
 import google.generativeai as genai
 
+# Configurar logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Configuración de Gemini
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 if GEMINI_KEY:
-    genai.configure(api_key=GEMINI_KEY)
+    try:
+        genai.configure(api_key=GEMINI_KEY)
+        logger.info("✅ Gemini API configurada correctamente")
+    except Exception as e:
+        logger.warning(f"⚠️ Error configurando Gemini: {e}")
+else:
+    logger.warning("⚠️ GEMINI_API_KEY no está configurada. Se usarán simulaciones.")
 
-def call_gemini_or_mock(prompt: str, fallback_response: str) -> str:
+def call_gemini_or_mock(prompt: str, fallback_response: str) -> dict:
     """
     Intenta llamar a Gemini si el API Key está presente.
-    Si falla o no hay clave, devuelve una simulación realista y altamente estructurada.
-    """
-    if GEMINI_KEY:
-        try:
-            model = genai.GenerativeModel("gemini-1.5-flash")
-            response = model.generate_content(prompt)
-            return response.text
-        except Exception as e:
-            print("Error llamando a la API de Gemini (usando fallback simulado):", e)
+    Si falla o no hay clave, devuelve una simulación realista.
     
-    return fallback_response
+    Returns:
+        dict con keys: "text", "source" (gemini|fallback|error), "error" (si aplica)
+    """
+    response_obj = {
+        "text": fallback_response,
+        "source": "fallback",
+        "error": None
+    }
+    
+    if not GEMINI_KEY:
+        logger.info("No hay GEMINI_API_KEY configurada. Usando fallback.")
+        return response_obj
+    
+    try:
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content(prompt, timeout=10)
+        response_obj["text"] = response.text
+        response_obj["source"] = "gemini"
+        logger.info("✅ Respuesta recibida de Gemini API")
+    except Exception as e:
+        error_msg = str(e)
+        response_obj["error"] = error_msg
+        response_obj["source"] = "fallback"
+        logger.error(f"❌ Error llamando a Gemini API: {error_msg}. Usando fallback simulado.")
+
+    return response_obj
 
 def analyze_patterns(product_id: int, db: Session):
     """
@@ -44,9 +72,11 @@ def analyze_patterns(product_id: int, db: Session):
     # Si no hay suficientes ventas, generamos una tendencia basada en simulación coherente
     base_sales = [s.quantity for s in sales] if sales else []
     if len(base_sales) < 5:
-        # Simulación coherente basada en el precio e ID del producto
-        random.seed(product_id)
+        # Simulación coherente basada en datos históricos
+        # NOTA: Solo usamos seed para reproducibilidad inicial, luego se resetea
+        random.seed(42)  # Semilla global para consistencia
         base_sales = [random.randint(2, 12) for _ in range(14)]
+        random.seed()  # Resetear seed para que las predicciones futuras sean dinámicas
 
     # Tendencia semanal
     weekly_patterns = {
@@ -136,7 +166,7 @@ def analyze_patterns(product_id: int, db: Session):
         f"El comportamiento mensual está alineado con la categoría **{product.category}** ({seasonality})."
     )
 
-    ai_report = call_gemini_or_mock(prompt, fallback_text)
+    ai_report_obj = call_gemini_or_mock(prompt, fallback_text)
 
     return {
         "product_id": product.id,
@@ -149,7 +179,9 @@ def analyze_patterns(product_id: int, db: Session):
         "peak_season": peak_season,
         "predictions": predictions,
         "total_predicted_7d": total_predicted,
-        "ai_report": ai_report
+        "ai_report": ai_report_obj["text"],
+        "ai_report_source": ai_report_obj["source"],  # ← Nuevo: indicar si es de Gemini o fallback
+        "ai_report_error": ai_report_obj["error"]      # ← Nuevo: errores si los hay
     }
 
 def detect_anomalies(db: Session):
@@ -224,10 +256,12 @@ def detect_anomalies(db: Session):
         try:
             db.add_all(anomalies_to_add)
             db.commit()
-            print(f"Se registraron {len(anomalies_to_add)} anomalías nuevas en la BD.")
+            logger.info(f"✅ Se registraron {len(anomalies_to_add)} anomalías nuevas en la BD.")
         except Exception as e:
             db.rollback()
-            print("Error al registrar anomalías en la BD:", e)
+            logger.error(f"❌ Error al registrar anomalías en la BD: {e}")
+    else:
+        logger.debug("ℹ️ No hay anomalías nuevas para registrar.")
 
     # Retornar lista completa
     return db.query(Anomaly).order_by(Anomaly.date.desc()).all()

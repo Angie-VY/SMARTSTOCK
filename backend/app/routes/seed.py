@@ -4,11 +4,13 @@ import datetime
 import random
 from app.database import get_db
 from app.models import Product, Movement, Anomaly, Rule, User
+from app.dependencies import require_role
+from app.auth_utils import get_password_hash
 
 router = APIRouter(prefix="/seed", tags=["seed"])
 
 @router.post("/")
-def seed_database(db: Session = Depends(get_db)):
+def seed_database(db: Session = Depends(get_db), current_user: User = Depends(require_role(["admin"]))):
     # 1. Limpiar base de datos
     db.query(Anomaly).delete()
     db.query(Movement).delete()
@@ -29,6 +31,7 @@ def seed_database(db: Session = Depends(get_db)):
     
     created_users = []
     for u_data in users_data:
+        u_data["password"] = get_password_hash(u_data["password"])
         user = User(**u_data)
         db.add(user)
         created_users.append(user)

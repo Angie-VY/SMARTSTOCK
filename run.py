@@ -24,14 +24,28 @@ def main():
     print("[*] El Frontend SPA se abrira en: http://127.0.0.1:8000/")
     print("\n[Presiona Ctrl+C para detener el servidor]\n")
     
-    cmd = [python_exe, '-m', 'uvicorn', 'app.main:app', '--reload', '--host', '127.0.0.1', '--port', '8000']
-    
-    try:
-        subprocess.run(cmd)
-    except KeyboardInterrupt:
-        print("\n[!] Servidor detenido por el usuario. Hasta luego!")
-    except Exception as e:
-        print(f"\n[Error] No se pudo iniciar el servidor: {e}")
+    ports_to_try = [8000, 8001]
+    for port in ports_to_try:
+        cmd = [python_exe, '-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', str(port)]
+        print(f"[*] Intentando iniciar el servidor en http://127.0.0.1:{port}...")
+        try:
+            subprocess.run(cmd, check=True)
+            return
+        except subprocess.CalledProcessError as e:
+            print(f"\n[!] No se pudo iniciar en el puerto {port}: el puerto está ocupado o hubo un error en Uvicorn.")
+            if port == ports_to_try[-1]:
+                print("\n[Error] No se pudo iniciar el servidor en ningún puerto disponible.")
+            else:
+                print(f"[*] Intentando con el siguiente puerto disponible...\n")
+        except KeyboardInterrupt:
+            print("\n[!] Servidor detenido por el usuario. Hasta luego!")
+            return
+        except Exception as e:
+            print(f"\n[!] Error al iniciar el servidor en el puerto {port}: {e}")
+            if port == ports_to_try[-1]:
+                print("\n[Error] No se pudo iniciar el servidor en ningún puerto disponible.")
+            else:
+                print(f"[*] Intentando con el siguiente puerto disponible...\n")
 
 if __name__ == '__main__':
     main()

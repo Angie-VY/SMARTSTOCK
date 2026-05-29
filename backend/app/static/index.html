@@ -32,7 +32,7 @@
     </script>
     
     <!-- Custom Style Sheet -->
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=2">
     
     <!-- Lucide Icons (Modern alternative to FontAwesome) -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -41,10 +41,13 @@
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     
     <!-- SmartStock SPA Application Controller -->
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v=2"></script>
     
     <!-- Alpine.js (Ultra-lightweight state reactivity) -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
 </head>
 <body class="h-full antialiased text-slate-100 bg-[#07080c] relative overflow-hidden" x-data="smartStockApp()" x-init="init()">
 
@@ -59,7 +62,7 @@
     <!-- ==========================================
          PANTALLA DE INICIO DE SESIÓN
          ========================================== -->
-    <div x-show="currentTab === 'login'" x-transition class="min-h-screen flex items-center justify-center px-4 relative overflow-hidden z-10">
+    <div x-show="currentTab === 'login'" x-cloak x-transition class="min-h-screen flex items-center justify-center px-4 relative overflow-hidden z-10">
         <div class="w-full max-w-md glass glass-glow-indigo p-8 rounded-2xl relative z-10 shadow-2xl hover:scale-[1.01] transition-all">
             <!-- Header de Login -->
             <div class="text-center mb-8">
@@ -115,7 +118,7 @@
     <!-- ==========================================
          PANTALLA DE RECUPERACIÓN DE CONTRASEÑA
          ========================================== -->
-    <div x-show="currentTab === 'recover'" x-transition class="min-h-screen flex items-center justify-center px-4 relative overflow-hidden z-10">
+    <div x-show="currentTab === 'recover'" x-cloak x-transition class="min-h-screen flex items-center justify-center px-4 relative overflow-hidden z-10">
         <div class="w-full max-w-md glass glass-glow-cyan p-8 rounded-2xl relative z-10 shadow-2xl transition-all">
             <div class="text-center mb-8">
                 <div class="inline-flex p-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/25 mb-4 animate-pulse">
@@ -161,7 +164,7 @@
     <!-- ==========================================
          PANEL PRINCIPAL DE APLICACIÓN (DASHBOARD + MODULOS)
          ========================================== -->
-    <div x-show="isAuthenticated" class="h-screen flex overflow-hidden bg-[#07080c]">
+    <div x-show="isAuthenticated" x-cloak class="h-screen flex overflow-hidden bg-[#07080c]">
         
         <!-- SIDEBAR LATERAL (MENU FUTURISTA) -->
         <aside class="w-64 bg-[#0a0b11] border-r border-slate-800/80 flex flex-col justify-between z-20 shrink-0">
@@ -206,18 +209,18 @@
                         <span>Control de Stock</span>
                     </button>
 
-                    <div class="pt-4 mt-4 border-t border-slate-900">
+                    <div class="pt-4 mt-4 border-t border-slate-900" x-show="user.role === 'admin' || user.role === 'supervisor'">
                         <span class="px-3 block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Módulos Avanzados IA</span>
                     </div>
 
-                    <button @click="switchTab('ai-patterns')" 
+                    <button @click="switchTab('ai-patterns')" x-show="user.role === 'admin' || user.role === 'supervisor'"
                         :class="currentTab === 'ai-patterns' ? 'sidebar-link-active' : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'"
                         class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all">
                         <i data-lucide="trending-up" class="w-5 h-5 text-cyan-400"></i>
                         <span>Detección de Patrones</span>
                     </button>
 
-                    <button @click="switchTab('ai-anomalies')" 
+                    <button @click="switchTab('ai-anomalies')" x-show="user.role === 'admin' || user.role === 'supervisor'"
                         :class="currentTab === 'ai-anomalies' ? 'sidebar-link-active' : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'"
                         class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all">
                         <div class="flex items-center gap-3">
@@ -228,11 +231,22 @@
                             class="bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs px-2 py-0.5 rounded-full pulse-glow-rose"></span>
                     </button>
 
-                    <button @click="switchTab('rules-engine')" 
+                    <button @click="switchTab('rules-engine')" x-show="user.role === 'admin' || user.role === 'supervisor'"
                         :class="currentTab === 'rules-engine' ? 'sidebar-link-active' : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'"
                         class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all">
                         <i data-lucide="sliders" class="w-5 h-5 text-emerald-400"></i>
                         <span>Motor de Reglas IA</span>
+                    </button>
+
+                    <div class="pt-4 mt-4 border-t border-slate-900" x-show="user.role === 'admin'">
+                        <span class="px-3 block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Administración</span>
+                    </div>
+
+                    <button @click="switchTab('users')" x-show="user.role === 'admin'"
+                        :class="currentTab === 'users' ? 'sidebar-link-active' : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all">
+                        <i data-lucide="users" class="w-5 h-5 text-rose-400"></i>
+                        <span>Gestión Usuarios</span>
                     </button>
                 </nav>
             </div>
@@ -302,6 +316,8 @@
                 <div class="flex items-center gap-4">
                     <!-- Botón Especial: Poblar Semilla IA (Solo si no hay datos) -->
                     <button @click="seedDatabase()" 
+                        :disabled="!(isAuthenticated && user.role === 'admin')"
+                        :class="!(isAuthenticated && user.role === 'admin') ? 'opacity-40 cursor-not-allowed' : ''"
                         class="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white flex items-center gap-2 shadow-lg shadow-indigo-600/20 border border-indigo-400/20 transition-all">
                         <i data-lucide="leaf" class="w-4 h-4"></i>
                         <span>Poblar Base de Datos (Semilla IA)</span>
@@ -629,6 +645,101 @@
                                 </div>
                             </div>
                         </template>
+                    </div>
+                </div>
+                
+                <!-- ==========================================
+                     TAB: GESTIÓN DE USUARIOS
+                     ========================================== -->
+                <div x-show="currentTab === 'users'" class="space-y-6 page-fade-in" x-transition>
+                    <div class="flex justify-between items-center mb-8">
+                        <div>
+                            <h2 class="text-3xl font-bold font-heading bg-gradient-to-r from-rose-400 to-indigo-400 bg-clip-text text-transparent">Gestión de Usuarios</h2>
+                            <p class="text-slate-400 text-sm mt-1">Administra los accesos y roles del sistema.</p>
+                        </div>
+                        <button @click="openUserModal()" class="btn-primary flex items-center gap-2">
+                            <i data-lucide="user-plus" class="w-5 h-5"></i>
+                            <span>Nuevo Usuario</span>
+                        </button>
+                    </div>
+
+                    <div class="glass-card overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-800/60 text-slate-400 text-sm">
+                                        <th class="p-4 font-semibold">ID</th>
+                                        <th class="p-4 font-semibold">Usuario</th>
+                                        <th class="p-4 font-semibold">Rol</th>
+                                        <th class="p-4 font-semibold text-right">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="u in systemUsers" :key="u.id">
+                                        <tr class="border-b border-slate-800/60 hover:bg-slate-800/20 transition-colors">
+                                            <td class="p-4 text-slate-300 font-mono text-sm" x-text="'#'+u.id"></td>
+                                            <td class="p-4 text-slate-200 font-medium" x-text="u.username"></td>
+                                            <td class="p-4">
+                                                <span class="px-2 py-1 text-xs rounded-full"
+                                                    :class="u.role === 'admin' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : (u.role === 'supervisor' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-slate-500/20 text-slate-300 border border-slate-500/30')"
+                                                    x-text="u.role.toUpperCase()"></span>
+                                            </td>
+                                            <td class="p-4 text-right space-x-2">
+                                                <button @click="openUserModal(u)" class="p-2 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 rounded-lg transition-colors" title="Editar Usuario">
+                                                    <i data-lucide="edit" class="w-4 h-4"></i>
+                                                </button>
+                                                <button @click="deleteUser(u.id)" class="p-2 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 rounded-lg transition-colors" title="Eliminar Usuario">
+                                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                    <tr x-show="systemUsers.length === 0">
+                                        <td colspan="4" class="p-8 text-center text-slate-500">
+                                            No hay usuarios registrados o no tienes permisos.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MODAL DE USUARIO -->
+                <div x-show="isUserModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm" x-transition.opacity style="display: none;">
+                    <div class="glass-card w-full max-w-md p-6 relative" @click.away="isUserModalOpen = false">
+                        <button @click="isUserModalOpen = false" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                            <i data-lucide="x" class="w-6 h-6"></i>
+                        </button>
+                        
+                        <h3 class="text-2xl font-bold font-heading mb-6" x-text="userForm.id ? 'Editar Usuario' : 'Nuevo Usuario'"></h3>
+                        
+                        <form @submit.prevent="saveUser()" class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-slate-400 mb-1">Nombre de Usuario</label>
+                                <input type="text" x-model="userForm.username" required class="input-field" placeholder="ej. jdoe">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm text-slate-400 mb-1">Contraseña</label>
+                                <input type="password" x-model="userForm.password" :required="!userForm.id" class="input-field" placeholder="***">
+                                <p class="text-xs text-slate-500 mt-1" x-show="userForm.id">Dejar en blanco para mantener la misma.</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm text-slate-400 mb-1">Rol</label>
+                                <select x-model="userForm.role" required class="input-field">
+                                    <option value="admin">Administrador</option>
+                                    <option value="supervisor">Supervisor</option>
+                                    <option value="employee">Empleado</option>
+                                </select>
+                            </div>
+                            
+                            <div class="pt-4 flex justify-end gap-3">
+                                <button type="button" @click="isUserModalOpen = false" class="btn-secondary">Cancelar</button>
+                                <button type="submit" class="btn-primary" x-text="userForm.id ? 'Actualizar' : 'Crear'"></button>
+                            </div>
+                        </form>
                     </div>
                 </div>
 

@@ -4,6 +4,8 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from app.database import get_db
 from app.models import User
+from app.auth_utils import get_password_hash
+from app.dependencies import require_role
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -21,12 +23,19 @@ class UserResponse(BaseModel):
         from_attributes = True
 
 @router.get("/", response_model=List[UserResponse])
-def get_users(db: Session = Depends(get_db)):
+def get_users(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(["admin"]))
+):
     """Listar todos los usuarios del sistema"""
     return db.query(User).all()
 
 @router.get("/{user_id}", response_model=UserResponse)
-def get_user(user_id: int, db: Session = Depends(get_db)):
+def get_user(
+    user_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(["admin"]))
+):
     """Obtener detalles de un usuario específico"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -37,9 +46,12 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
     return user
 
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def create_user(req: UserSchema, db: Session = Depends(get_db)):
+def create_user(
+    req: UserSchema, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(["admin"]))
+):
     """Crear un nuevo usuario en el sistema"""
-    # Validar que el usuario no exista
     existing_user = db.query(User).filter(User.username == req.username.strip()).first()
     if existing_user:
         raise HTTPException(
@@ -47,17 +59,15 @@ def create_user(req: UserSchema, db: Session = Depends(get_db)):
             detail="El usuario ya existe en el sistema."
         )
     
-    # Validar rol
     if req.role not in ["admin", "supervisor", "employee"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Rol no válido. Debe ser: admin, supervisor, employee"
         )
 
-    # Crear usuario
     new_user = User(
         username=req.username.strip(),
-        password=req.password,  # TODO: Hash con bcrypt en producción
+        password=get_password_hash(req.password),
         role=req.role
     )
     db.add(new_user)
@@ -67,7 +77,12 @@ def create_user(req: UserSchema, db: Session = Depends(get_db)):
     return new_user
 
 @router.put("/{user_id}", response_model=UserResponse)
-def update_user(user_id: int, req: UserSchema, db: Session = Depends(get_db)):
+def update_user(
+    user_id: int, 
+    req: UserSchema, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(["admin"]))
+):
     """Actualizar datos de un usuario existente"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -76,14 +91,12 @@ def update_user(user_id: int, req: UserSchema, db: Session = Depends(get_db)):
             detail="Usuario no encontrado."
         )
     
-    # Validar rol
     if req.role not in ["admin", "supervisor", "employee"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Rol no válido. Debe ser: admin, supervisor, employee"
         )
     
-    # Validar que no exista otro usuario con el mismo nombre
     existing_user = db.query(User).filter(
         User.username == req.username.strip(),
         User.id != user_id
@@ -94,9 +107,9 @@ def update_user(user_id: int, req: UserSchema, db: Session = Depends(get_db)):
             detail="Ya existe otro usuario con ese nombre."
         )
 
-    # Actualizar
     user.username = req.username.strip()
-    user.password = req.password
+    if req.password and req.password != user.password:
+        user.password = get_password_hash(req.password)
     user.role = req.role
     
     db.commit()
@@ -104,7 +117,11 @@ def update_user(user_id: int, req: UserSchema, db: Session = Depends(get_db)):
     return user
 
 @router.delete("/{user_id}")
-def delete_user(user_id: int, db: Session = Depends(get_db)):
+def delete_user(
+    user_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(["admin"]))
+):
     """Eliminar un usuario del sistema"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -113,7 +130,6 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
             detail="Usuario no encontrado."
         )
     
-    # Prevenir que se elimine el último admin
     admin_count = db.query(User).filter(User.role == "admin").count()
     if user.role == "admin" and admin_count <= 1:
         raise HTTPException(
@@ -126,7 +142,12 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     return {"status": "success", "message": f"Usuario '{user.username}' eliminado correctamente."}
 
 @router.post("/change-password")
-def change_password(user_id: int, new_password: str, db: Session = Depends(get_db)):
+def change_password(
+    user_id: int, 
+    new_password: str, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(["admin"]))
+):
     """Cambiar contraseña de un usuario"""
     if len(new_password) < 4:
         raise HTTPException(
@@ -141,7 +162,7 @@ def change_password(user_id: int, new_password: str, db: Session = Depends(get_d
             detail="Usuario no encontrado."
         )
     
-    user.password = new_password  # TODO: Hash en producción
+    user.password = get_password_hash(new_password)
     db.commit()
     db.refresh(user)
     

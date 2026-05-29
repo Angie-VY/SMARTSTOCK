@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from app.database import get_db
-from app.models import Product
+from app.models import Product, User
+from app.dependencies import get_current_user, require_role
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -22,11 +23,11 @@ class ProductResponse(ProductSchema):
         from_attributes = True
 
 @router.get("/", response_model=List[ProductResponse])
-def get_products(db: Session = Depends(get_db)):
+def get_products(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return db.query(Product).all()
 
 @router.get("/{product_id}", response_model=ProductResponse)
-def get_product(product_id: int, db: Session = Depends(get_db)):
+def get_product(product_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(
@@ -36,7 +37,7 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
     return product
 
 @router.post("/", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
-def create_product(req: ProductSchema, db: Session = Depends(get_db)):
+def create_product(req: ProductSchema, db: Session = Depends(get_db), current_user: User = Depends(require_role(["admin", "supervisor"]))):
     # Validar duplicados por nombre
     existing = db.query(Product).filter(Product.name == req.name.strip()).first()
     if existing:
@@ -59,7 +60,7 @@ def create_product(req: ProductSchema, db: Session = Depends(get_db)):
     return product
 
 @router.put("/{product_id}", response_model=ProductResponse)
-def update_product(product_id: int, req: ProductSchema, db: Session = Depends(get_db)):
+def update_product(product_id: int, req: ProductSchema, db: Session = Depends(get_db), current_user: User = Depends(require_role(["admin", "supervisor"]))):
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(
@@ -87,7 +88,7 @@ def update_product(product_id: int, req: ProductSchema, db: Session = Depends(ge
     return product
 
 @router.delete("/{product_id}")
-def delete_product(product_id: int, db: Session = Depends(get_db)):
+def delete_product(product_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_role(["admin", "supervisor"]))):
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(

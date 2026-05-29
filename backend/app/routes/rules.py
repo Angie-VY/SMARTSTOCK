@@ -4,8 +4,9 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 import datetime
 from app.database import get_db
-from app.models import Rule
+from app.models import Rule, User
 from app.services import rules_engine
+from app.dependencies import require_role
 
 router = APIRouter(prefix="/rules", tags=["rules"])
 
@@ -23,11 +24,11 @@ class RuleResponse(RuleSchema):
         from_attributes = True
 
 @router.get("/", response_model=List[RuleResponse])
-def get_rules(db: Session = Depends(get_db)):
+def get_rules(db: Session = Depends(get_db), current_user: User = Depends(require_role(["admin", "supervisor"]))):
     return db.query(Rule).all()
 
 @router.post("/", response_model=RuleResponse, status_code=status.HTTP_201_CREATED)
-def create_rule(req: RuleSchema, db: Session = Depends(get_db)):
+def create_rule(req: RuleSchema, db: Session = Depends(get_db), current_user: User = Depends(require_role(["admin"]))):
     # Validar tipo de regla
     if req.rule_type not in ["reorder", "anomaly_alert", "auto_min_stock"]:
         raise HTTPException(
@@ -47,7 +48,7 @@ def create_rule(req: RuleSchema, db: Session = Depends(get_db)):
     return rule
 
 @router.put("/{rule_id}", response_model=RuleResponse)
-def update_rule(rule_id: int, req: RuleSchema, db: Session = Depends(get_db)):
+def update_rule(rule_id: int, req: RuleSchema, db: Session = Depends(get_db), current_user: User = Depends(require_role(["admin"]))):
     rule = db.query(Rule).filter(Rule.id == rule_id).first()
     if not rule:
         raise HTTPException(
@@ -71,7 +72,7 @@ def update_rule(rule_id: int, req: RuleSchema, db: Session = Depends(get_db)):
     return rule
 
 @router.delete("/{rule_id}")
-def delete_rule(rule_id: int, db: Session = Depends(get_db)):
+def delete_rule(rule_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_role(["admin"]))):
     rule = db.query(Rule).filter(Rule.id == rule_id).first()
     if not rule:
         raise HTTPException(
@@ -84,7 +85,7 @@ def delete_rule(rule_id: int, db: Session = Depends(get_db)):
     return {"status": "success", "message": f"Regla '{rule.name}' eliminada correctamente."}
 
 @router.post("/evaluate")
-def force_evaluate_rules(db: Session = Depends(get_db)):
+def force_evaluate_rules(db: Session = Depends(get_db), current_user: User = Depends(require_role(["admin", "supervisor"]))):
     # Ejecuta manualmente el motor de reglas y retorna el log
     logs = rules_engine.evaluate_rules(db)
     return {

@@ -14,6 +14,9 @@ function smartStockApp() {
         movements: [],
         anomalies: [],
         rules: [],
+        systemUsers: [],
+        userForm: { id: null, username: '', password: '', role: 'employee' },
+        isUserModalOpen: false,
         
         // --- Forms State ---
         loginForm: { username: '', password: '' },
@@ -87,6 +90,41 @@ function smartStockApp() {
             }, 4000);
         },
 
+        // Backwards-compatible notification alias used in some handlers
+        showNotification(message, type = 'success') {
+            this.showToast(message, type);
+        },
+
+        
+        // --- API Helper ---
+        async fetchAPI(url, options = {}) {
+            const headers = { ...options.headers };
+            if (this.user && this.user.token) {
+                headers['Authorization'] = 'Bearer ' + this.user.token;
+            }
+            if (!headers['Content-Type']) {
+                headers['Content-Type'] = 'application/json';
+            }
+            
+            const res = await fetch(url, { ...options, headers });
+            
+            let data;
+            try {
+                data = await res.json();
+            } catch (e) {
+                data = null;
+            }
+            
+            if (!res.ok) {
+                if (res.status === 401 || res.status === 403) {
+                    if (res.status === 401) this.logout();
+                    throw new Error(data.detail || 'Sesión expirada o no autorizada.');
+                }
+                throw new Error((data && data.detail) || 'Error en la solicitud');
+            }
+            return data;
+        },
+
         // --- Auth Operations ---
         async login() {
             try {
@@ -99,7 +137,7 @@ function smartStockApp() {
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.detail || 'Error al iniciar sesión');
                 
-                this.user = { username: data.username, role: data.role };
+                this.user = { username: data.username, role: data.role, token: data.token };
                 this.isAuthenticated = true;
                 localStorage.setItem('ss_user', JSON.stringify(this.user));
                 
@@ -133,17 +171,13 @@ function smartStockApp() {
             }
 
             try {
-                const res = await fetch('/api/auth/recover', {
+                const data = await this.fetchAPI('/api/auth/recover', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         username: this.recoverForm.username,
                         new_password: this.recoverForm.new_password
                     })
                 });
-                
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.detail || 'Error al recuperar contraseña');
                 
                 this.showToast(data.message, 'success');
                 this.recoverForm = { username: '', new_password: '', confirm_password: '' };
@@ -155,19 +189,23 @@ function smartStockApp() {
 
         // --- Seeding Database Operations ---
         async seedDatabase() {
+            // Requiere usuario autenticado con rol 'admin'
+            if (!this.isAuthenticated || this.user.role !== 'admin') {
+                this.showToast('Se requiere iniciar sesión como administrador para poblar la base de datos.', 'warning');
+                return;
+            }
+
+            if (!confirm('Esto reemplazará los datos del sistema y creará usuarios y datos de prueba. ¿Deseas continuar?')) return;
+
             this.loadingSeed = true;
             this.showToast('Sembrando base de datos con Inteligencia Artificial...', 'info');
             try {
-                const res = await fetch('/api/seed/', { method: 'POST' });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.detail || 'Error al sembrar base de datos');
-                
-                // Esperar un segundo extra para simular el análisis holográfico
-                setTimeout(async () => {
-                    this.showToast(data.message, 'success');
-                    this.loadingSeed = false;
-                    await this.loadAllData();
-                }, 1500);
+                const data = await this.fetchAPI('/api/seed/', { method: 'POST' });
+
+                // Mostrar resultado y recargar datos
+                this.showToast(data.message, 'success');
+                this.loadingSeed = false;
+                await this.loadAllData();
             } catch (err) {
                 this.loadingSeed = false;
                 this.showToast(err.message, 'error');
@@ -176,25 +214,36 @@ function smartStockApp() {
 
         // --- Load Data Operations ---
         async loadAllData() {
-            if (!this.isAuthenticated) return;
-            await Promise.all([
-                this.loadProducts(),
-                this.loadMovements(),
-                this.loadAnomalies(),
-                this.loadRules()
-            ]);
-            
-            // Dibujar gráficos de Dashboard después de cargar
-            this.$nextTick(() => {
-                this.renderDashboardCharts();
-            });
+            this.isLoading = true;
+            try {
+                await Promise.all([
+                    this.loadProducts(),
+                    this.loadMovements(),
+                    this.loadAnomalies(),
+                    this.loadRules()
+                ]);
+                
+                if (this.user && this.user.role === 'admin') {
+                    await this.loadUsers();
+                }
+                
+                // Actualizar contadores
+                this.unreadAnomaliesCount = this.anomalies.filter(a => !a.resolved).length;
+                
+                // Dibujar gráficos de Dashboard después de cargar
+                this.$nextTick(() => {
+                    this.renderDashboardCharts();
+                });
+            } catch (err) {
+                this.showToast(err.message, 'error');
+            } finally {
+                this.isLoading = false;
+            }
         },
 
         async loadProducts() {
             try {
-                const res = await fetch('/api/products/');
-                if (!res.ok) throw new Error('No se pudieron obtener los productos');
-                this.products = await res.json();
+                this.products = await this.fetchAPI('/api/products/');
                 
                 // Calcular estadísticas
                 this.stats.totalProducts = this.products.length;
@@ -209,9 +258,7 @@ function smartStockApp() {
 
         async loadMovements() {
             try {
-                const res = await fetch('/api/movements/');
-                if (!res.ok) throw new Error('No se pudo obtener el historial de movimientos');
-                this.movements = await res.json();
+                this.movements = await this.fetchAPI('/api/movements/');
             } catch (err) {
                 this.showToast(err.message, 'error');
             }
@@ -220,9 +267,7 @@ function smartStockApp() {
         async loadAnomalies() {
             this.loadingAnomalies = true;
             try {
-                const res = await fetch('/api/ai/anomalies');
-                if (!res.ok) throw new Error('No se pudieron obtener las anomalías de inventario');
-                this.anomalies = await res.json();
+                this.anomalies = await this.fetchAPI('/api/ai/anomalies');
                 
                 // Contar anomalías activas
                 this.unreadAnomaliesCount = this.anomalies.filter(a => !a.resolved).length;
@@ -235,9 +280,7 @@ function smartStockApp() {
 
         async loadRules() {
             try {
-                const res = await fetch('/api/rules/');
-                if (!res.ok) throw new Error('No se pudieron obtener las reglas de negocio');
-                this.rules = await res.json();
+                this.rules = await this.fetchAPI('/api/rules/');
             } catch (err) {
                 console.error(err);
             }
@@ -261,14 +304,10 @@ function smartStockApp() {
             const method = this.isEditMode ? 'PUT' : 'POST';
             
             try {
-                const res = await fetch(url, {
+                const data = await this.fetchAPI(url, {
                     method: method,
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(this.productForm)
                 });
-                
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.detail || 'Error al guardar el producto');
                 
                 this.showToast(`Producto '${data.name}' guardado correctamente.`, 'success');
                 this.isProductModalOpen = false;
@@ -280,9 +319,7 @@ function smartStockApp() {
 
         async deleteProduct(id) {
             try {
-                const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.detail || 'Error al eliminar producto');
+                const data = await this.fetchAPI(`/api/products/${id}`, { method: 'DELETE' });
                 
                 this.showToast(data.message, 'success');
                 this.confirmDeleteId = null;
@@ -311,14 +348,10 @@ function smartStockApp() {
                 { product_id: parseInt(this.movementForm.product_id), quantity: this.movementForm.quantity, reason: this.movementForm.reason };
 
             try {
-                const res = await fetch(path, {
+                const data = await this.fetchAPI(path, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
                 });
-
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.detail || 'Error al registrar el movimiento');
 
                 this.showToast(data.message, 'success');
                 this.isMovementModalOpen = false;
@@ -341,9 +374,7 @@ function smartStockApp() {
         // --- Anomaly Operations ---
         async resolveAnomaly(anomalyId) {
             try {
-                const res = await fetch(`/api/ai/anomalies/${anomalyId}/resolve`, { method: 'POST' });
-                const data = await res.json();
-                if (!res.ok) throw new Error('No se pudo resolver la anomalía');
+                const data = await this.fetchAPI(`/api/ai/anomalies/${anomalyId}/resolve`, { method: 'POST' });
                 
                 this.showToast(data.message, 'success');
                 await this.loadAnomalies();
@@ -365,14 +396,10 @@ function smartStockApp() {
             };
             
             try {
-                const res = await fetch(`/api/rules/${rule.id}`, {
+                const data = await this.fetchAPI(`/api/rules/${rule.id}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(updated)
                 });
-                
-                const data = await res.json();
-                if (!res.ok) throw new Error('No se pudo actualizar la regla');
                 
                 this.showToast(`Regla '${data.name}' ${data.is_active ? 'ACTIVADA' : 'DESACTIVADA'}.`, 'success');
                 await this.loadRules();
@@ -383,9 +410,7 @@ function smartStockApp() {
 
         async runRulesEngine(showSuccessToast = true) {
             try {
-                const res = await fetch('/api/rules/evaluate', { method: 'POST' });
-                const data = await res.json();
-                if (!res.ok) throw new Error('Error ejecutando el motor de reglas');
+                const data = await this.fetchAPI('/api/rules/evaluate', { method: 'POST' });
                 
                 if (data.actions_triggered && data.actions_triggered.length > 0) {
                     this.lastRuleEvaluationLogs = data.actions_triggered;
@@ -413,10 +438,7 @@ function smartStockApp() {
             
             this.loadingAI = true;
             try {
-                const res = await fetch(`/api/ai/patterns/${this.selectedProductIdPatterns}`);
-                if (!res.ok) throw new Error('No se pudo completar el análisis de la IA');
-                
-                this.aiPatternsData = await res.json();
+                this.aiPatternsData = await this.fetchAPI(`/api/ai/patterns/${this.selectedProductIdPatterns}`);
                 this.showToast(`Análisis en tiempo real para '${this.aiPatternsData.product_name}' completado.`, 'success');
                 
                 // Dibujar gráfico de proyección
@@ -499,11 +521,11 @@ function smartStockApp() {
                 dataLabels: { enabled: false },
                 stroke: { curve: 'smooth', width: 2 },
                 series: [
-                    { name: 'Entradas (Stock IN)', data: ins.length ? ins : [10, 35, 15, 25, 45, 12, 30] },
-                    { name: 'Salidas (Ventas OUT)', data: outs.length ? outs : [5, 18, 20, 10, 30, 22, 18] }
+                    { name: 'Entradas (Stock IN)', data: ins.length ? ins : [] },
+                    { name: 'Salidas (Ventas OUT)', data: outs.length ? outs : [] }
                 ],
                 xaxis: {
-                    categories: sortedDates.length ? sortedDates.map(d => d.substring(5)) : ['05-15', '05-16', '05-17', '05-18', '05-19', '05-20', '05-21'],
+                    categories: sortedDates.length ? sortedDates.map(d => d.substring(5)) : [],
                     labels: { style: { colors: '#94a3b8' } }
                 },
                 yaxis: { labels: { style: { colors: '#94a3b8' } } },
@@ -532,8 +554,8 @@ function smartStockApp() {
                 },
                 theme: { mode: 'dark' },
                 colors: ['#6366f1', '#06b6d4', '#f43f5e', '#f59e0b', '#10b981'],
-                series: stockValues.length ? stockValues : [40, 25, 15],
-                labels: categories.length ? categories : ['Tecnología', 'Alimentos', 'Ropa'],
+                series: stockValues.length ? stockValues : [],
+                labels: categories.length ? categories : [],
                 legend: { position: 'bottom', labels: { colors: '#94a3b8' } },
                 stroke: { show: false },
                 plotOptions: {
@@ -595,6 +617,51 @@ function smartStockApp() {
 
             this.charts.forecastChart = new ApexCharts(el, options);
             this.charts.forecastChart.render();
+        },
+
+        // --- Users Operations ---
+        async loadUsers() {
+            try {
+                this.systemUsers = await this.fetchAPI('/api/users/');
+            } catch (error) {
+                console.error("Error cargando usuarios:", error);
+            }
+        },
+        openUserModal(user = null) {
+            if (user) {
+                this.userForm = { id: user.id, username: user.username, password: '', role: user.role };
+            } else {
+                this.userForm = { id: null, username: '', password: '', role: 'employee' };
+            }
+            this.isUserModalOpen = true;
+        },
+        async saveUser() {
+            try {
+                const isUpdate = !!this.userForm.id;
+                const url = isUpdate ? `/api/users/${this.userForm.id}` : '/api/users/';
+                const method = isUpdate ? 'PUT' : 'POST';
+                
+                await this.fetchAPI(url, {
+                    method: method,
+                    body: JSON.stringify(this.userForm)
+                });
+                
+                this.showNotification(`Usuario ${isUpdate ? 'actualizado' : 'creado'} correctamente`, 'success');
+                this.isUserModalOpen = false;
+                await this.loadUsers();
+            } catch (error) {
+                this.showNotification(error.message, 'error');
+            }
+        },
+        async deleteUser(id) {
+            if (!confirm('¿Estás seguro de eliminar este usuario?')) return;
+            try {
+                await this.fetchAPI(`/api/users/${id}`, { method: 'DELETE' });
+                this.showNotification('Usuario eliminado', 'success');
+                await this.loadUsers();
+            } catch (error) {
+                this.showNotification(error.message, 'error');
+            }
         }
     };
 }

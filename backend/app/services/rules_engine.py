@@ -115,20 +115,18 @@ def evaluate_rules(db: Session):
                         "timestamp": datetime.datetime.now().isoformat()
                     })
             
-            # Guardamos cambios en los productos si hubo auto-ajustes
-            if triggered_this_run:
-                try:
-                    db.commit()
-                except Exception as e:
-                    db.rollback()
-                    print("Error actualizando stock mínimo en auto-ajuste:", e)
+            # Preparar la actualización de los productos
+            pass
 
         if triggered_this_run:
             rule.last_triggered = datetime.datetime.now()
-            try:
-                db.commit()
-            except Exception as e:
-                db.rollback()
-                print(f"Error actualizando fecha de disparo en regla {rule.id}:", e)
+
+    # Un solo commit al final de evaluar todas las reglas
+    if execution_logs:
+        try:
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            print("Error actualizando reglas y productos:", e)
 
     return execution_logs
