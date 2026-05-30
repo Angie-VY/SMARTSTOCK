@@ -33,7 +33,7 @@ def ai_health_check(current_user: User = Depends(require_role(["admin", "supervi
     try:
         # Intentar contactar Gemini con un prompt mínimo
         model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content("Di solo '✅ OK'", timeout=5)
+        response = model.generate_content("Di solo '✅ OK'")
         
         if response and response.text:
             health_status["gemini_available"] = True

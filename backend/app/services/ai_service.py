@@ -42,7 +42,7 @@ def call_gemini_or_mock(prompt: str, fallback_response: str) -> dict:
     
     try:
         model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(prompt, timeout=10)
+        response = model.generate_content(prompt)
         response_obj["text"] = response.text
         response_obj["source"] = "gemini"
         logger.info("✅ Respuesta recibida de Gemini API")

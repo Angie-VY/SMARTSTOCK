@@ -1,6 +1,6 @@
 import datetime
 from sqlalchemy.orm import Session
-from app.models import Product, Anomaly, Rule
+from app.models import Product, Anomaly, Rule, Movement
 from app.services import ai_service
 
 def evaluate_rules(db: Session):
